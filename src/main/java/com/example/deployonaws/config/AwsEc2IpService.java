@@ -1,35 +1,37 @@
 package com.example.deployonaws.config;
 
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.util.EC2MetadataUtils;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class AwsEc2IpService {
 
     public static String getInstanceId() {
         return EC2MetadataUtils.getInstanceId();
-
-//        // Getting instance Id
-//        String instanceId = EC2MetadataUtils.getInstanceId();
-//
-//        // Getting EC2 private IP
-//        String privateIP = EC2MetadataUtils.getInstanceInfo().getPrivateIp();
-//
-//        // Getting EC2 public IP
-//    AmazonEC2 awsEC2client = AmazonEC2ClientBuilder.defaultClient();
-//    String publicIP = awsEC2client.describeInstances(new DescribeInstancesRequest()
-//                    .withInstanceIds(instanceId))
-//            .getReservations()
-//            .stream()
-////            .map(Reservation::getInstances)
-//            .map(it -> it.rese)
-//            .flatMap(List::stream)
-//            .findFirst()
-//            .map(Instance::getPublicIpAddress)
-//            .orElse(null);
     }
 
     public static String getAZ() {
         return EC2MetadataUtils.getAvailabilityZone();
+    }
+
+    public static String getPublicIp() {
+        String instanceId = EC2MetadataUtils.getInstanceId();
+        AmazonEC2 awsEC2client = AmazonEC2ClientBuilder.defaultClient();
+        return awsEC2client.describeInstances(new DescribeInstancesRequest()
+                        .withInstanceIds(instanceId))
+                .getReservations()
+                .stream()
+                .map(Reservation::getInstances)
+                .flatMap(List::stream)
+                .findFirst()
+                .map(Instance::getPublicIpAddress)
+                .orElse(null);
     }
 }

@@ -20,13 +20,13 @@ public class HelloWorldController {
     @GetMapping("/aws")
     @ResponseStatus(HttpStatus.OK)
     public Output helloWorldAws() {
-        return Output.create(AwsEc2IpService.getInstanceId(), AwsEc2IpService.getAZ());
+        return Output.create(AwsEc2IpService.getInstanceId(), AwsEc2IpService.getAZ(), AwsEc2IpService.getPublicIp());
     }
 }
 
-record Output(String helloWorld, String ec2Ip, String availabilityZone) {
+record Output(String helloWorld, String ec2Ip, String availabilityZone, String publicIp) {
 
-    static Output create(String ec2Ip, String availabilityZone) {
-        return new Output("Hello World", ec2Ip, availabilityZone);
+    static Output create(String ec2Ip, String availabilityZone, String publicIp) {
+        return new Output("Hello World", ec2Ip, availabilityZone, publicIp);
     }
 }

@@ -108,7 +108,7 @@ Resources:
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: "ami-0bd4d695347c0ef88"
+      ImageId: "ami-07dfed28fcf95241c"
       InstanceType: "t2.micro"
       KeyName: !Ref KeyPairName
       NetworkInterfaces:
@@ -127,9 +127,9 @@ Resources:
           source "$HOME/.sdkman/bin/sdkman-init.sh"
           sdk install gradle
           cd /home/ec2-user
-          git clone https://github.com/jorgekamezawa/spring-boot-localstack.git 2>&1
+          git clone https://github.com/jorgekamezawa/deploy-on-aws.git 2>&1
           echo "Git clone exit code: $?"
-          cd spring-boot-localstack
+          cd deploy-on-aws
           gradle clean build
           java -jar build/libs/deploy-on-aws-0.0.1-SNAPSHOT.jar
       Tags:
