@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  MyIP:
+    Type: String
+    Description: "Your IP address in CIDR"
+    Default: "152.244.47.254/32"
+  Region:
+    Type: String
+    Description: "The currenty region"
+    Default: "us-east-1"
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: The name of an existing Amazon EC2 key pair in this region to use to SSH into the Amazon EC2 instances.
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.2.0.0/16"
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: "teste-deploy-vpc"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: "teste-deploy-igw"
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: "10.2.1.0/24"
+      AvailabilityZone: {
+        "Fn::Sub": "${Region}a"
+      }
+      Tags:
+        - Key: Name
+          Value: "teste-deploy-subnet-public01"
+
+  PublicSubnet02:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: "10.2.2.0/24"
+      AvailabilityZone: {
+        "Fn::Sub": "${Region}b"
+      }
+      Tags:
+        - Key: Name
+          Value: "teste-deploy-subnet-public02"
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: "teste-deploy-rtb-public"
+
+  Route:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet01RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet01
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet02RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet02
+      RouteTableId: !Ref PublicRouteTable
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "TesteDeployEc2SecurityGroup"
+      GroupDescription: "Security Group for EC2 instance"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - CidrIp: !Ref MyIP
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "ami-0bd4d695347c0ef88"
+      InstanceType: "t2.micro"
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !Ref PublicSubnet01
+          AssociatePublicIpAddress: true
+          GroupSet:
+            - !Ref EC2SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install -y java-17-amazon-corretto
+          sudo yum install git -y
+          curl -s "https://get.sdkman.io" | bash
+          source "$HOME/.sdkman/bin/sdkman-init.sh"
+          sdk install gradle
+          cd /home/ec2-user
+          git clone https://github.com/jorgekamezawa/spring-boot-localstack.git 2>&1
+          echo "Git clone exit code: $?"
+          cd spring-boot-localstack
+          gradle clean build
+          java -jar build/libs/deploy-on-aws-0.0.1-SNAPSHOT.jar
+      Tags:
+        - Key: Name
+          Value: "teste-deploy-backend"
