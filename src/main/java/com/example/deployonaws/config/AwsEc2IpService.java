@@ -22,16 +22,21 @@ public class AwsEc2IpService {
     }
 
     public static String getPublicIp() {
-        String instanceId = EC2MetadataUtils.getInstanceId();
-        AmazonEC2 awsEC2client = AmazonEC2ClientBuilder.defaultClient();
-        return awsEC2client.describeInstances(new DescribeInstancesRequest()
-                        .withInstanceIds(instanceId))
-                .getReservations()
-                .stream()
-                .map(Reservation::getInstances)
-                .flatMap(List::stream)
-                .findFirst()
-                .map(Instance::getPublicIpAddress)
-                .orElse(null);
+        try {
+            String instanceId = EC2MetadataUtils.getInstanceId();
+            AmazonEC2 awsEC2client = AmazonEC2ClientBuilder.defaultClient();
+            return awsEC2client.describeInstances(new DescribeInstancesRequest()
+                            .withInstanceIds(instanceId))
+                    .getReservations()
+                    .stream()
+                    .map(Reservation::getInstances)
+                    .flatMap(List::stream)
+                    .findFirst()
+                    .map(Instance::getPublicIpAddress)
+                    .orElse(null);
+        } catch (Exception ex) {
+            return ex.getMessage();
+        }
+
     }
 }
