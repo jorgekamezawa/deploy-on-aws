@@ -1,5 +1,6 @@
 package com.example.deployonaws.config;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
@@ -24,7 +25,8 @@ public class AwsEc2IpService {
     public static String getPublicIp() {
         try {
             String instanceId = EC2MetadataUtils.getInstanceId();
-            AmazonEC2 awsEC2client = AmazonEC2ClientBuilder.defaultClient();
+            AmazonEC2 awsEC2client = AmazonEC2ClientBuilder.standard()
+                    .withCredentials(new DefaultAWSCredentialsProviderChain()).defaultClient();
             return awsEC2client.describeInstances(new DescribeInstancesRequest()
                             .withInstanceIds(instanceId))
                     .getReservations()
